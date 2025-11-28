@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: spherax-chat-server
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - CLIENT_URL=http://localhost:80
+    networks:
+      - spherax-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_SERVER_URL=http://localhost:3001
+    container_name: spherax-chat-client
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    networks:
+      - spherax-network
+
+networks:
+  spherax-network:
+    driver: bridge
+
