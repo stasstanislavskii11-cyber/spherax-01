@@ -88,7 +88,8 @@ io.on('connection', (socket) => {
         io.to(prevRoom).emit('system', {
           type: 'system',
           text: `${socket.username} left the chat`,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          room: prevRoom
         });
 
         // Send updated user list to previous room
@@ -98,6 +99,19 @@ io.on('connection', (socket) => {
           users: prevRoomUsers,
           room: prevRoom
         });
+      }
+
+      // Check if username is already taken (excluding current user if they're switching rooms)
+      const existingUser = Array.from(connectedUsers.entries()).find(
+        ([id, user]) => user.username === trimmedUsername && id !== socket.id
+      );
+      
+      if (existingUser) {
+        socket.emit('error', {
+          type: 'error',
+          message: 'Username is already taken'
+        });
+        return;
       }
 
       // Join new room
