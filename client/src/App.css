@@ -308,11 +308,18 @@
   }
 }
 
-.user-message {
+.other-message {
   background: white;
   border: 1px solid #e5e7eb;
   align-self: flex-start;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.own-message {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  align-self: flex-end;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
 }
 
 .system-message {
@@ -333,10 +340,22 @@
   gap: 12px;
 }
 
+.other-message .message-header {
+  justify-content: flex-start;
+}
+
+.own-message .message-header {
+  justify-content: flex-end;
+}
+
 .message-username {
   font-weight: 600;
   color: #667eea;
   font-size: 14px;
+}
+
+.other-message .message-username {
+  color: #667eea;
 }
 
 .message-timestamp {
@@ -344,9 +363,17 @@
   color: #9ca3af;
 }
 
+.own-message .message-timestamp {
+  color: rgba(255, 255, 255, 0.8);
+}
+
 .message-text {
   color: #333;
   line-height: 1.5;
+}
+
+.own-message .message-text {
+  color: white;
 }
 
 .message-form {

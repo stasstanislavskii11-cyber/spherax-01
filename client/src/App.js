@@ -243,20 +243,23 @@ function App() {
                     <p>No messages yet. Start the conversation!</p>
                   </div>
                 ) : (
-                  messages.map((msg, index) => (
-                    <div
-                      key={index}
-                      className={`message ${msg.type === 'system' ? 'system-message' : 'user-message'}`}
-                    >
-                      {msg.type === 'message' && (
-                        <div className="message-header">
-                          <span className="message-username">{msg.username}</span>
-                          <span className="message-timestamp">{formatTimestamp(msg.timestamp)}</span>
-                        </div>
-                      )}
-                      <div className="message-text">{msg.text}</div>
-                    </div>
-                  ))
+                  messages.map((msg, index) => {
+                    const isOwnMessage = msg.type === 'message' && msg.username === username;
+                    return (
+                      <div
+                        key={index}
+                        className={`message ${msg.type === 'system' ? 'system-message' : isOwnMessage ? 'own-message' : 'other-message'}`}
+                      >
+                        {msg.type === 'message' && (
+                          <div className="message-header">
+                            {!isOwnMessage && <span className="message-username">{msg.username}</span>}
+                            <span className="message-timestamp">{formatTimestamp(msg.timestamp)}</span>
+                          </div>
+                        )}
+                        <div className="message-text">{msg.text}</div>
+                      </div>
+                    );
+                  })
                 )}
                 <div ref={messagesEndRef} />
               </div>
