@@ -18,6 +18,7 @@ function App() {
   const messagesEndRef = useRef(null);
   const messageInputRef = useRef(null);
   const currentRoomRef = useRef(selectedRoom);
+  const previousRoomRef = useRef(null);
 
   // Update room ref when selectedRoom changes
   useEffect(() => {
@@ -94,9 +95,9 @@ function App() {
     };
   }, []);
 
-  // Handle room change
+  // Handle room change (only when user has already joined and is actually switching rooms)
   useEffect(() => {
-    if (socket && socket.connected && username) {
+    if (socket && socket.connected && username && previousRoomRef.current !== null && previousRoomRef.current !== selectedRoom) {
       // Clear messages and users for the new room
       setMessages([]);
       setOnlineUsers([]);
@@ -104,6 +105,8 @@ function App() {
       // Join the new room (server will send history and users list)
       socket.emit('join', { username, room: selectedRoom });
     }
+    // Update previous room reference
+    previousRoomRef.current = selectedRoom;
   }, [selectedRoom, username, socket]);
 
   // Auto-scroll to bottom when new messages arrive
@@ -131,6 +134,7 @@ function App() {
       socket.emit('join', { username: trimmedUsername, room: selectedRoom });
       setUsername(trimmedUsername);
       setUsernameInput('');
+      previousRoomRef.current = selectedRoom;
     } else {
       alert('Not connected to server. Please wait...');
     }
