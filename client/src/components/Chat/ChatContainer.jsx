@@ -14,7 +14,8 @@ const ChatContainer = ({
   messages,
   messageInput,
   setMessageInput,
-  onMessageSubmit
+  onMessageSubmit,
+  messageFormRef
 }) => {
   return (
     <div className="chat-container">
@@ -38,6 +39,7 @@ const ChatContainer = ({
           setMessageInput={setMessageInput}
           onMessageSubmit={onMessageSubmit}
           isConnected={isConnected}
+          messageFormRef={messageFormRef}
         />
       </div>
     </div>

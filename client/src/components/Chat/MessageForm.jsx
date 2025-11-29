@@ -1,21 +1,54 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { validateMessage } from '../../utils/validators';
 import './Chat.css';
 
-const MessageForm = ({ messageInput, setMessageInput, onSubmit, selectedRoom, isConnected, username, onRoomChange }) => {
+const MessageForm = ({ messageInput, setMessageInput, onSubmit, selectedRoom, isConnected, username, onRoomChange }, ref) => {
   const messageInputRef = useRef(null);
+  const isConnectedRef = useRef(isConnected);
 
+  // Expose focus method to parent components
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      if (messageInputRef.current && isConnected) {
+        setTimeout(() => {
+          if (messageInputRef.current && isConnected) {
+            messageInputRef.current.focus();
+          }
+        }, 100);
+      }
+    }
+  }));
+
+  // Keep ref updated
+  useEffect(() => {
+    isConnectedRef.current = isConnected;
+  }, [isConnected]);
+
+  // Focus on mount if username exists (for refresh scenarios)
   useEffect(() => {
     if (username && messageInputRef.current) {
-      messageInputRef.current.focus();
+      const timer = setTimeout(() => {
+        if (messageInputRef.current && isConnectedRef.current) {
+          messageInputRef.current.focus();
+        }
+      }, 200);
+      return () => clearTimeout(timer);
     }
-  }, [username]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
 
+  // Focus input when username is set (first join), room changes, or connection is established
   useEffect(() => {
     if (username && messageInputRef.current) {
-      messageInputRef.current.focus();
+      // Small delay to ensure input is fully rendered and enabled
+      const timer = setTimeout(() => {
+        if (messageInputRef.current && isConnected) {
+          messageInputRef.current.focus();
+        }
+      }, 150);
+      return () => clearTimeout(timer);
     }
-  }, [selectedRoom]);
+  }, [username, selectedRoom, isConnected]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -58,5 +91,5 @@ const MessageForm = ({ messageInput, setMessageInput, onSubmit, selectedRoom, is
   );
 };
 
-export default MessageForm;
+export default forwardRef(MessageForm);
 

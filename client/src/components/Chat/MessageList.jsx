@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import MessageItem from './MessageItem';
-import { GLOBAL_ROOM } from '../../utils/constants';
 import './Chat.css';
 
 const MessageList = ({ messages, username, selectedRoom }) => {

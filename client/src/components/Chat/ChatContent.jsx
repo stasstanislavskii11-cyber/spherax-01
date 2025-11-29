@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import MessageList from './MessageList';
 import MessageForm from './MessageForm';
 import './Chat.css';
@@ -10,7 +10,8 @@ const ChatContent = ({
   messageInput,
   setMessageInput,
   onMessageSubmit,
-  isConnected
+  isConnected,
+  messageFormRef
 }) => {
   return (
     <div className="chat-content">
@@ -23,6 +24,7 @@ const ChatContent = ({
         selectedRoom={selectedRoom}
       />
       <MessageForm
+        ref={messageFormRef}
         messageInput={messageInput}
         setMessageInput={setMessageInput}
         onSubmit={onMessageSubmit}

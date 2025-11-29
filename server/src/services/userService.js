@@ -15,9 +15,10 @@ const isFirstJoin = (username) => {
 const handleUserJoin = (socket, username, room) => {
   const isQuickReconnectUser = isQuickReconnect(username);
   
-  // Clear the recent disconnect entry if user is reconnecting
+  // Clear the recent disconnect entry and cancel any pending disconnect timeout
   if (isQuickReconnectUser) {
     userStore.clearRecentDisconnect(username);
+    userStore.clearDisconnectTimeout(username); // Cancel the pending "left" message
   }
   
   // Update socket properties
@@ -46,8 +47,8 @@ const handleUserDisconnect = (socket) => {
     const hasOtherSessions = userStore.hasOtherSessionsAnywhere(username);
     
     if (!hasOtherSessions) {
-      // This was the last session - user has completely left
-      userStore.updateGlobalUserStatus(username, 'disconnected');
+      // Don't update status immediately - wait for reconnect window
+      // Just mark the recent disconnect timestamp
       userStore.setRecentDisconnect(username, Date.now());
     }
     

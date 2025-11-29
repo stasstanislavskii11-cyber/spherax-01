@@ -113,8 +113,16 @@
   border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
+  padding-bottom: 12px;
   overflow-y: auto;
-  padding: 16px;
+}
+
+.chat-sidebar .rooms-list {
+  padding: 5px 12px;
+}
+
+.chat-sidebar .users-list {
+  padding: 0 12px;
 }
 
 .chat-content {
@@ -125,13 +133,13 @@
 }
 
 .chat-room-header {
-  padding: 13.5px 20px;
+  padding: 12px 20px;
   background: white;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .chat-room-header h2 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #333;
   margin: 0;
@@ -320,6 +328,14 @@
 
   .chat-room-header {
     padding: 8px 20px;
+  }
+
+  .rooms-section h3 {
+    padding: 8px 12px !important;
+  }
+  
+  .users-section h3 {
+    padding: 8px 12px !important;
   }
 }
 

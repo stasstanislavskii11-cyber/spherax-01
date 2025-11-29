@@ -78,9 +78,27 @@ export const useSocket = (username, selectedRoom) => {
       }
     });
 
+    // Handle reconnection after disconnect
+    newSocket.on('reconnect', () => {
+      console.log('Reconnected to server');
+      setIsConnected(true);
+      
+      // Auto-join if username exists after reconnection
+      const currentUsername = usernameRef.current;
+      const currentRoom = currentRoomRef.current;
+      if (currentUsername) {
+        newSocket.emit('join', { username: currentUsername, room: currentRoom });
+        previousRoomRef.current = currentRoom;
+      }
+    });
+
     newSocket.on('connect_error', (error) => {
       console.error('Connection error:', error);
       setIsConnected(false);
+    });
+
+    newSocket.on('reconnect_attempt', () => {
+      console.log('Attempting to reconnect...');
     });
 
     // Listen for messages
@@ -157,6 +175,13 @@ export const useSocket = (username, selectedRoom) => {
     };
   }, []);
 
+  // Reset previousRoomRef when username is cleared (logout)
+  useEffect(() => {
+    if (!username) {
+      previousRoomRef.current = null;
+    }
+  }, [username]);
+
   // Auto-join when socket connects and username exists
   useEffect(() => {
     if (socket && socket.connected && username && previousRoomRef.current === null) {
@@ -203,7 +228,7 @@ export const useSocket = (username, selectedRoom) => {
         setMessages(filteredMessages);
       }
     }
-  }, [selectedRoom, username]);
+  }, [selectedRoom, username, messages]);
 
   return {
     socket,

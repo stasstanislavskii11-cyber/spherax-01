@@ -14,6 +14,10 @@ const allUsers = new Map();
 // Map: username -> timestamp of last disconnect
 const recentDisconnects = new Map();
 
+// Store pending disconnect timeouts to cancel them on quick reconnect
+// Map: username -> timeout ID
+const disconnectTimeouts = new Map();
+
 const initializeRooms = (rooms) => {
   rooms.forEach(room => {
     if (!roomUsers.has(room)) {
@@ -93,6 +97,24 @@ const clearRecentDisconnect = (username) => {
   recentDisconnects.delete(username);
 };
 
+// New functions for timeout management
+const setDisconnectTimeout = (username, timeoutId) => {
+  // Clear any existing timeout for this user
+  const existingTimeout = disconnectTimeouts.get(username);
+  if (existingTimeout) {
+    clearTimeout(existingTimeout);
+  }
+  disconnectTimeouts.set(username, timeoutId);
+};
+
+const clearDisconnectTimeout = (username) => {
+  const timeoutId = disconnectTimeouts.get(username);
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+    disconnectTimeouts.delete(username);
+  }
+};
+
 const hasOtherSessionsAnywhere = (username) => {
   return Array.from(connectedUsers.values()).some(
     user => user.username === username
@@ -138,6 +160,8 @@ module.exports = {
   getRecentDisconnect,
   clearRecentDisconnect,
   hasOtherSessionsAnywhere,
-  updateSocketRoom
+  updateSocketRoom,
+  setDisconnectTimeout,
+  clearDisconnectTimeout
 };
 

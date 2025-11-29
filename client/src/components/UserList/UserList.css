@@ -1,17 +1,20 @@
 /* UserList styles - extracted from App.css */
 .users-section {
-  margin-top: 24px;
+  height: 60%;
+  overflow: auto;
 }
 
 .users-section h3 {
-  margin-bottom: 12px;
+  position: sticky;
+  top: 0;
+  background: white;
   color: #333;
   font-size: 16px;
   font-weight: 600;
+  padding: 12px;
 }
 
 .users-list {
-  max-height: 300px;
   overflow-y: auto;
 }
 
@@ -33,7 +36,7 @@
 }
 
 .user-indicator.offline {
-  color: #9e9e9e;
+  color: #f87171;
 }
 
 .user-name {
@@ -47,4 +50,3 @@
   padding: 16px 0;
   text-align: center;
 }
-
