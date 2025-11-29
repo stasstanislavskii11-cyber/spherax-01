@@ -214,8 +214,15 @@
 }
 
 .user-indicator {
-  color: #4ade80;
   font-size: 10px;
+}
+
+.user-indicator.online {
+  color: #4ade80;
+}
+
+.user-indicator.offline {
+  color: #f87171;
 }
 
 .user-name {
@@ -350,7 +357,7 @@
 
 .message-username {
   font-weight: 600;
-  color: #667eea;
+  color: white;
   font-size: 14px;
 }
 

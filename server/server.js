@@ -28,9 +28,19 @@ const roomMessages = new Map();
 // Map: room -> Set of usernames
 const roomUsers = new Map();
 
+// Store all users globally with their connection status
+// Map: username -> { status: 'connected' | 'disconnected', lastSeen: timestamp }
+const allUsers = new Map();
+
+// Track recent disconnects to detect reloads (suppress leave/join messages)
+// Map: username -> timestamp of last disconnect
+const recentDisconnects = new Map();
+const RECONNECT_WINDOW = 5000; // 5 seconds - if user reconnects within this time, treat as reload
+
 // Default rooms
 const DEFAULT_ROOM = 'general';
-const ROOMS = ['general', 'random', 'tech', 'gaming'];
+const GLOBAL_ROOM = 'global';
+const ROOMS = ['global', 'general', 'random', 'tech', 'gaming'];
 
 // Initialize default rooms
 ROOMS.forEach(room => {
@@ -47,6 +57,28 @@ app.get('/health', (req, res) => {
 app.get('/rooms', (req, res) => {
   res.json({ rooms: ROOMS });
 });
+
+// Get all users with their status
+app.get('/users', (req, res) => {
+  const usersList = Array.from(allUsers.entries()).map(([username, data]) => ({
+    username,
+    status: data.status,
+    lastSeen: data.lastSeen
+  }));
+  res.json({ users: usersList });
+});
+
+// Helper function to broadcast global user list to all clients
+const broadcastAllUsers = () => {
+  const globalUsersList = Array.from(allUsers.entries()).map(([username, data]) => ({
+    username,
+    status: data.status
+  }));
+  io.emit('allUsers', {
+    type: 'allUsers',
+    users: globalUsersList
+  });
+};
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
@@ -78,19 +110,36 @@ io.on('connection', (socket) => {
         return;
       }
 
+      // Check if this is a first-time join (before we update socket.room)
+      // Leave messages only appear on disconnect/logout, not when switching rooms
+      // A user is joining for the first time if their username is not in any room's user list
+      // Also check if this is a quick reconnect (reload) - if so, don't send join message
+      const usernameInAnyRoom = Array.from(roomUsers.values()).some(users => users.has(trimmedUsername));
+      const recentDisconnectTime = recentDisconnects.get(trimmedUsername);
+      const isQuickReconnect = recentDisconnectTime && (Date.now() - recentDisconnectTime) < RECONNECT_WINDOW;
+      const isFirstJoin = !usernameInAnyRoom && !isQuickReconnect;
+      
+      // Clear the recent disconnect entry if user is reconnecting
+      if (isQuickReconnect) {
+        recentDisconnects.delete(trimmedUsername);
+      }
+      
       // Leave previous room if user was in one (before checking username uniqueness)
+      // Don't send "left" message when switching rooms - only on disconnect
       if (socket.room) {
         const prevRoom = socket.room;
-        roomUsers.get(prevRoom)?.delete(socket.username);
+        const prevUsername = socket.username;
         socket.leave(prevRoom);
+
+        // Check if there are other sessions with the same username in the previous room
+        const otherSessionsInPrevRoom = Array.from(connectedUsers.entries()).filter(
+          ([id, user]) => user.username === prevUsername && user.room === prevRoom && id !== socket.id
+        );
         
-        // Notify previous room
-        io.to(prevRoom).emit('system', {
-          type: 'system',
-          text: `${socket.username} left the chat`,
-          timestamp: new Date().toISOString(),
-          room: prevRoom
-        });
+        // Only remove from roomUsers if this was the last session of this username in that room
+        if (otherSessionsInPrevRoom.length === 0 && prevUsername) {
+          roomUsers.get(prevRoom)?.delete(prevUsername);
+        }
 
         // Send updated user list to previous room
         const prevRoomUsers = Array.from(roomUsers.get(prevRoom) || []);
@@ -101,27 +150,36 @@ io.on('connection', (socket) => {
         });
       }
 
-      // Check if username is already taken (excluding current user if they're switching rooms)
-      const existingUser = Array.from(connectedUsers.entries()).find(
-        ([id, user]) => user.username === trimmedUsername && id !== socket.id
-      );
-      
-      if (existingUser) {
-        socket.emit('error', {
-          type: 'error',
-          message: 'Username is already taken'
-        });
-        return;
-      }
+      // Allow multiple sessions with the same username (like Telegram)
+      // No username uniqueness check - users can login from multiple devices
 
       // Join new room
       socket.join(trimmedRoom);
+      // Also join global room to receive join/leave messages
+      if (trimmedRoom !== GLOBAL_ROOM) {
+        socket.join(GLOBAL_ROOM);
+      }
       socket.username = trimmedUsername;
       socket.room = trimmedRoom;
       
-      // Store user
+      // Store user (allow multiple sessions with same username)
       connectedUsers.set(socket.id, { username: trimmedUsername, room: trimmedRoom });
+      // Add username to room users (Set automatically handles duplicates)
       roomUsers.get(trimmedRoom)?.add(trimmedUsername);
+
+      // Update global user list - mark as connected
+      if (!allUsers.has(trimmedUsername)) {
+        // New user - add to global list
+        allUsers.set(trimmedUsername, {
+          status: 'connected',
+          lastSeen: new Date().toISOString()
+        });
+      } else {
+        // Existing user - update status to connected
+        const userData = allUsers.get(trimmedUsername);
+        userData.status = 'connected';
+        userData.lastSeen = new Date().toISOString();
+      }
 
       console.log(`User ${trimmedUsername} joined room ${trimmedRoom} (socket: ${socket.id})`);
 
@@ -133,7 +191,7 @@ io.on('connection', (socket) => {
         room: trimmedRoom
       });
 
-      // Send current users list to the new user
+      // Send current users list to the new user (room-specific)
       const roomUsersList = Array.from(roomUsers.get(trimmedRoom) || []);
       socket.emit('users', {
         type: 'users',
@@ -141,13 +199,30 @@ io.on('connection', (socket) => {
         room: trimmedRoom
       });
 
-      // Notify all clients in the room
-      io.to(trimmedRoom).emit('system', {
-        type: 'system',
-        text: `${trimmedUsername} joined the chat`,
-        timestamp: new Date().toISOString(),
-        room: trimmedRoom
-      });
+      // Send global user list with status to all clients
+      broadcastAllUsers();
+
+      // Only send join message to global room on first join (not when switching rooms)
+      // Join/leave messages are only shown in global room
+      // Leave messages only appear on disconnect/logout
+      if (isFirstJoin) {
+        const globalJoinMessage = {
+          type: 'system',
+          text: `System: ${trimmedUsername} joined the chat`,
+          timestamp: new Date().toISOString(),
+          room: GLOBAL_ROOM,
+          username: trimmedUsername
+        };
+        io.to(GLOBAL_ROOM).emit('system', globalJoinMessage);
+        
+        // Store system message in global room history
+        const globalHistory = roomMessages.get(GLOBAL_ROOM) || [];
+        globalHistory.push(globalJoinMessage);
+        if (globalHistory.length > 100) {
+          globalHistory.shift();
+        }
+        roomMessages.set(GLOBAL_ROOM, globalHistory);
+      }
 
       // Send updated user list to all users in the room
       io.to(trimmedRoom).emit('users', {
@@ -224,17 +299,74 @@ io.on('connection', (socket) => {
     if (userData && socket.room) {
       const { username, room } = userData;
       connectedUsers.delete(socket.id);
-      roomUsers.get(room)?.delete(username);
+      
+      // Check if there are other sessions with the same username in this room
+      const otherSessionsInRoom = Array.from(connectedUsers.values()).filter(
+        user => user.username === username && user.room === room
+      );
+      
+      // Only remove from roomUsers if this was the last session of this username in this room
+      if (otherSessionsInRoom.length === 0) {
+        roomUsers.get(room)?.delete(username);
+      }
       
       console.log(`User ${username} disconnected from room ${room} (socket: ${socket.id})`);
 
-      // Notify all remaining clients in the room
-      io.to(room).emit('system', {
-        type: 'system',
-        text: `${username} left the chat`,
-        timestamp: new Date().toISOString(),
-        room: room
-      });
+      // Only send leave message if this was the last session of this username
+      // Check across all rooms to see if user has any other active sessions
+      const otherSessionsAnywhere = Array.from(connectedUsers.values()).filter(
+        user => user.username === username
+      );
+      
+      if (otherSessionsAnywhere.length === 0) {
+        // This was the last session - user has completely left
+        // Update global user list - mark as disconnected
+        if (allUsers.has(username)) {
+          const userData = allUsers.get(username);
+          userData.status = 'disconnected';
+          userData.lastSeen = new Date().toISOString();
+        }
+        
+        // Track the disconnect time to detect quick reconnects (reloads)
+        recentDisconnects.set(username, Date.now());
+        
+        // Use a delayed leave message to allow for quick reconnects
+        // If user reconnects within RECONNECT_WINDOW, the join handler will clear this
+        setTimeout(() => {
+          // Check if user has reconnected (if so, don't send leave message)
+          const hasReconnected = Array.from(roomUsers.values()).some(users => users.has(username));
+          const stillRecentDisconnect = recentDisconnects.get(username);
+          
+          if (!hasReconnected && stillRecentDisconnect) {
+            // User hasn't reconnected - send leave message
+            const globalLeaveMessage = {
+              type: 'system',
+              text: `${username} left the chat`,
+              timestamp: new Date().toISOString(),
+              room: GLOBAL_ROOM,
+              username: username
+            };
+            io.to(GLOBAL_ROOM).emit('system', globalLeaveMessage);
+            
+            // Store system message in global room history
+            const globalHistory = roomMessages.get(GLOBAL_ROOM) || [];
+            globalHistory.push(globalLeaveMessage);
+            if (globalHistory.length > 100) {
+              globalHistory.shift();
+            }
+            roomMessages.set(GLOBAL_ROOM, globalHistory);
+            
+            // Clean up the recent disconnect entry
+            recentDisconnects.delete(username);
+            
+            // Send updated global user list to all clients
+            broadcastAllUsers();
+          }
+        }, RECONNECT_WINDOW);
+      }
+
+      // Note: Room-specific leave messages are now handled in the delayed timeout above
+      // This prevents showing leave messages on reload
 
       // Send updated user list to all users in the room
       const roomUsersList = Array.from(roomUsers.get(room) || []);
@@ -243,6 +375,9 @@ io.on('connection', (socket) => {
         users: roomUsersList,
         room: room
       });
+      
+      // Send updated global user list to all clients
+      broadcastAllUsers();
     } else {
       console.log('Client disconnected:', socket.id);
     }
