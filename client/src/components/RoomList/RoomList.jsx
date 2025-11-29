@@ -1,8 +1,11 @@
 import React from 'react';
 import { ROOMS } from '../../utils/constants';
+import { useChat } from '../../contexts/ChatContext';
 import './RoomList.css';
 
-const RoomList = ({ selectedRoom, onRoomChange, isConnected }) => {
+const RoomList = () => {
+  const { selectedRoom, handleRoomChange, isConnected } = useChat();
+
   return (
     <div className="rooms-section">
       <h3>Rooms</h3>
@@ -11,7 +14,7 @@ const RoomList = ({ selectedRoom, onRoomChange, isConnected }) => {
           <button
             key={room}
             className={`room-button ${selectedRoom === room ? 'active' : ''}`}
-            onClick={() => onRoomChange(room)}
+            onClick={() => handleRoomChange(room)}
             disabled={!isConnected}
           >
             {room}

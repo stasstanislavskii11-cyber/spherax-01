@@ -1,8 +1,11 @@
 import React from 'react';
 import { getInitialLetter } from '../../utils/formatters';
+import { useChat } from '../../contexts/ChatContext';
 import './Chat.css';
 
-const ChatHeader = ({ username, isConnected, onLogout }) => {
+const ChatHeader = () => {
+  const { username, isConnected, handleLogout } = useChat();
+
   return (
     <header className="chat-header">
       <h1>SpheraX Chat</h1>
@@ -14,7 +17,7 @@ const ChatHeader = ({ username, isConnected, onLogout }) => {
             </div>
             <div className={`connection-badge ${isConnected ? 'connected' : 'disconnected'}`}></div>
           </div>
-          <button className="logout-btn" onClick={onLogout} title="Logout">
+          <button className="logout-btn" onClick={handleLogout} title="Logout">
             Logout
           </button>
         </div>

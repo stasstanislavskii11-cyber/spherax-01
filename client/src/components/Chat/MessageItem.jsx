@@ -1,9 +1,11 @@
 import React from 'react';
 import { formatTimestamp } from '../../utils/formatters';
 import { GLOBAL_ROOM } from '../../utils/constants';
+import { useChat } from '../../contexts/ChatContext';
 import './Chat.css';
 
-const MessageItem = ({ message, username, selectedRoom }) => {
+const MessageItem = ({ message }) => {
+  const { username, selectedRoom } = useChat();
   const isOwnMessage = message.type === 'message' && message.username === username;
   const isGlobalRoom = selectedRoom === GLOBAL_ROOM;
 

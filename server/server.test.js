@@ -250,16 +250,20 @@ describe('Chat Server Tests', () => {
     const onJoin = () => {
       joinCount++;
       if (joinCount === 2) {
-        // Both clients have joined, now set up the listener
-        clientSocket2.once('system', (data) => {
-          if (data.text.includes('left the chat')) {
+        // Both clients have joined, now set up the listener for disconnect
+        // Use 'on' instead of 'once' and filter for the specific message
+        const disconnectListener = (data) => {
+          if (data.text && data.text.includes('left the chat') && data.text.includes('Alice')) {
             expect(data.type).toBe('system');
             expect(data.text).toContain('Alice');
+            clientSocket2.removeListener('system', disconnectListener);
             done();
           }
-        });
+        };
+        
+        clientSocket2.on('system', disconnectListener);
 
-        // Disconnect after a short delay
+        // Disconnect after a short delay to ensure everything is set up
         setTimeout(() => {
           clientSocket1.disconnect();
         }, 100);

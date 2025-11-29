@@ -1,8 +1,10 @@
 import React, { useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { validateMessage } from '../../utils/validators';
+import { useChat } from '../../contexts/ChatContext';
 import './Chat.css';
 
-const MessageForm = ({ messageInput, setMessageInput, onSubmit, selectedRoom, isConnected, username, onRoomChange }, ref) => {
+const MessageForm = (props, ref) => {
+  const { messageInput, setMessageInput, handleMessageSubmit, selectedRoom, isConnected, username, messageFormRef } = useChat();
   const messageInputRef = useRef(null);
   const isConnectedRef = useRef(isConnected);
 
@@ -18,6 +20,14 @@ const MessageForm = ({ messageInput, setMessageInput, onSubmit, selectedRoom, is
       }
     }
   }));
+
+  // Callback ref to sync messageFormRef with the input element
+  const setInputRef = (element) => {
+    messageInputRef.current = element;
+    if (messageFormRef) {
+      messageFormRef.current = element;
+    }
+  };
 
   // Keep ref updated
   useEffect(() => {
@@ -63,15 +73,14 @@ const MessageForm = ({ messageInput, setMessageInput, onSubmit, selectedRoom, is
       return;
     }
 
-    onSubmit(trimmedMessage);
-    setMessageInput('');
+    handleMessageSubmit(trimmedMessage);
     messageInputRef.current?.focus();
   };
 
   return (
     <form onSubmit={handleSubmit} className="message-form">
       <input
-        ref={messageInputRef}
+        ref={setInputRef}
         type="text"
         value={messageInput}
         onChange={(e) => setMessageInput(e.target.value)}

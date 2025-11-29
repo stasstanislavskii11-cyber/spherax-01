@@ -1,8 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import MessageItem from './MessageItem';
+import { useChat } from '../../contexts/ChatContext';
 import './Chat.css';
 
-const MessageList = ({ messages, username, selectedRoom }) => {
+const MessageList = () => {
+  const { messages, selectedRoom } = useChat();
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -25,8 +27,6 @@ const MessageList = ({ messages, username, selectedRoom }) => {
             <MessageItem
               key={index}
               message={msg}
-              username={username}
-              selectedRoom={selectedRoom}
             />
           ))}
           <div ref={messagesEndRef} />
