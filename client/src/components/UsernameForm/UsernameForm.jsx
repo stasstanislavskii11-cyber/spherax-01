@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { validateUsername } from '../../utils/validators';
 import './UsernameForm.css';
 
-const UsernameForm = ({ onSubmit, isConnected = true }) => {
+const UsernameForm = ({ onSubmit }) => {
   const [usernameInput, setUsernameInput] = useState('');
 
   const handleSubmit = (e) => {
@@ -14,14 +14,8 @@ const UsernameForm = ({ onSubmit, isConnected = true }) => {
       return;
     }
 
-    // Check if connected before allowing submission
-    if (!isConnected) {
-      alert('Not connected to server. Please wait...');
-      return;
-    }
-
-    // Allow submission if socket exists - it will connect automatically
-    // The socket connection is handled in useSocket hook
+    // Allow submission - socket connection is handled in App.js
+    // The socket will connect automatically if needed
     onSubmit(trimmedUsername);
     setUsernameInput('');
   };

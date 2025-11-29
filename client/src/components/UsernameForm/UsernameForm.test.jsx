@@ -13,7 +13,7 @@ describe('UsernameForm', () => {
   });
 
   it('should render form elements', () => {
-    render(<UsernameForm onSubmit={mockOnSubmit} isConnected={true} />);
+    render(<UsernameForm onSubmit={mockOnSubmit} />);
     
     expect(screen.getByText('Enter your username')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Username')).toBeInTheDocument();
@@ -21,7 +21,7 @@ describe('UsernameForm', () => {
   });
 
   it('should call onSubmit with trimmed username when form is submitted', async () => {
-    render(<UsernameForm onSubmit={mockOnSubmit} isConnected={true} />);
+    render(<UsernameForm onSubmit={mockOnSubmit} />);
     
     const input = screen.getByPlaceholderText('Username');
     const submitButton = screen.getByRole('button', { name: /join chat/i });
@@ -33,7 +33,7 @@ describe('UsernameForm', () => {
   });
 
   it('should clear input after successful submission', async () => {
-    render(<UsernameForm onSubmit={mockOnSubmit} isConnected={true} />);
+    render(<UsernameForm onSubmit={mockOnSubmit} />);
     
     const input = screen.getByPlaceholderText('Username');
     const submitButton = screen.getByRole('button', { name: /join chat/i });
@@ -47,7 +47,7 @@ describe('UsernameForm', () => {
   });
 
   it('should show alert for empty username', async () => {
-    render(<UsernameForm onSubmit={mockOnSubmit} isConnected={true} />);
+    render(<UsernameForm onSubmit={mockOnSubmit} />);
     
     const submitButton = screen.getByRole('button', { name: /join chat/i });
     await userEvent.click(submitButton);
@@ -57,7 +57,7 @@ describe('UsernameForm', () => {
   });
 
   it('should show alert for whitespace-only username', async () => {
-    render(<UsernameForm onSubmit={mockOnSubmit} isConnected={true} />);
+    render(<UsernameForm onSubmit={mockOnSubmit} />);
     
     const input = screen.getByPlaceholderText('Username');
     const submitButton = screen.getByRole('button', { name: /join chat/i });
@@ -69,8 +69,8 @@ describe('UsernameForm', () => {
     expect(mockOnSubmit).not.toHaveBeenCalled();
   });
 
-  it('should show alert when not connected', async () => {
-    render(<UsernameForm onSubmit={mockOnSubmit} isConnected={false} />);
+  it('should allow submission even when not connected (connection handled automatically)', async () => {
+    render(<UsernameForm onSubmit={mockOnSubmit} />);
     
     const input = screen.getByPlaceholderText('Username');
     const submitButton = screen.getByRole('button', { name: /join chat/i });
@@ -78,12 +78,13 @@ describe('UsernameForm', () => {
     await userEvent.type(input, 'alice');
     await userEvent.click(submitButton);
 
-    expect(window.alert).toHaveBeenCalledWith('Not connected to server. Please wait...');
-    expect(mockOnSubmit).not.toHaveBeenCalled();
+    // Should still call onSubmit - connection will be handled by App.js
+    expect(mockOnSubmit).toHaveBeenCalledWith('alice');
+    expect(window.alert).not.toHaveBeenCalled();
   });
 
   it('should update input value when typing', async () => {
-    render(<UsernameForm onSubmit={mockOnSubmit} isConnected={true} />);
+    render(<UsernameForm onSubmit={mockOnSubmit} />);
     
     const input = screen.getByPlaceholderText('Username');
     await userEvent.type(input, 'alice');
@@ -92,7 +93,7 @@ describe('UsernameForm', () => {
   });
 
   it('should submit form on Enter key press', async () => {
-    render(<UsernameForm onSubmit={mockOnSubmit} isConnected={true} />);
+    render(<UsernameForm onSubmit={mockOnSubmit} />);
     
     const input = screen.getByPlaceholderText('Username');
     await userEvent.type(input, 'alice{enter}');
@@ -101,7 +102,7 @@ describe('UsernameForm', () => {
   });
 
   it('should respect maxLength attribute', () => {
-    render(<UsernameForm onSubmit={mockOnSubmit} isConnected={true} />);
+    render(<UsernameForm onSubmit={mockOnSubmit} />);
     
     const input = screen.getByPlaceholderText('Username');
     expect(input).toHaveAttribute('maxLength', '50');
