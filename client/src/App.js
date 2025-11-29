@@ -139,7 +139,23 @@ function App() {
     newSocket.on('connect', () => {
       console.log('Connected to server');
       setIsConnected(true);
-      
+      // Update current user's status in allUsers list when connected
+      if (usernameRef.current) {
+        setAllUsers((prev) => {
+          const userExists = prev.some(user => user.username === usernameRef.current);
+          if (userExists) {
+            return prev.map((user) => 
+              user.username === usernameRef.current 
+                ? { ...user, isOnline: true }
+                : user
+            );
+          } else {
+            // User not in list yet, add them as online
+            return [...prev, { username: usernameRef.current, isOnline: true }];
+          }
+        });
+      }
+
       // Auto-join if username was restored from localStorage
       // Use refs to get the latest values
       const currentUsername = usernameRef.current;
@@ -153,6 +169,22 @@ function App() {
     newSocket.on('disconnect', () => {
       console.log('Disconnected from server');
       setIsConnected(false);
+      // Update current user's status in allUsers list when disconnected
+      if (usernameRef.current) {
+        setAllUsers((prev) => {
+          const userExists = prev.some(user => user.username === usernameRef.current);
+          if (userExists) {
+            return prev.map((user) => 
+              user.username === usernameRef.current 
+                ? { ...user, isOnline: false }
+                : user
+            );
+          } else {
+            // User not in list yet, add them as offline
+            return [...prev, { username: usernameRef.current, isOnline: false }];
+          }
+        });
+      }
     });
 
     newSocket.on('connect_error', (error) => {
@@ -186,7 +218,7 @@ function App() {
           globalMessages.shift();
         }
         saveMessagesToStorage(GLOBAL_ROOM, globalMessages);
-        
+
         // Only display if we're currently viewing the global room
         if (currentRoomRef.current === GLOBAL_ROOM) {
           setMessages((prev) => {
@@ -195,7 +227,7 @@ function App() {
             return [...filtered, systemMessageWithRoom];
           });
         }
-        
+
       }
     };
 
@@ -207,21 +239,21 @@ function App() {
         // Filter stored messages to only include messages for this room
         const filteredStored = storedMessages.filter(msg => msg.room === data.room);
         const serverMessages = (data.messages || []).map(msg => ({ ...msg, room: data.room }));
-        
+
         // Combine and deduplicate by timestamp and text
         const allMessages = [...filteredStored, ...serverMessages];
         const uniqueMessages = allMessages.filter((msg, index, self) =>
-          index === self.findIndex((m) => 
-            m.timestamp === msg.timestamp && 
+          index === self.findIndex((m) =>
+            m.timestamp === msg.timestamp &&
             m.text === msg.text &&
             m.room === msg.room &&
             (m.username === msg.username || (m.type === 'system' && msg.type === 'system'))
           )
         );
-        
+
         // Sort by timestamp
         uniqueMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-        
+
         setMessages(uniqueMessages);
       }
     };
@@ -241,7 +273,7 @@ function App() {
         username: user.username,
         isOnline: user.status === 'connected'
       }));
-      
+
       // Sort: online users first, then offline users, both alphabetically
       const sortedUsers = usersList.sort((a, b) => {
         if (a.isOnline !== b.isOnline) {
@@ -249,7 +281,7 @@ function App() {
         }
         return a.username.localeCompare(b.username);
       });
-      
+
       setAllUsers(sortedUsers);
     };
 
@@ -290,14 +322,14 @@ function App() {
       setMessages([]);
       setOnlineUsers([]);
       // Don't reset allUsers - keep global user list across all rooms
-      
+
       // Load messages from localStorage for the new room (filtered by room)
       const storedMessages = loadMessagesFromStorage(selectedRoom);
       const filteredMessages = storedMessages.filter(msg => msg.room === selectedRoom);
       if (filteredMessages.length > 0) {
         setMessages(filteredMessages);
       }
-      
+
       // Join the new room (server will send history and users list)
       socket.emit('join', { username, room: selectedRoom });
     }
@@ -322,7 +354,7 @@ function App() {
   const handleUsernameSubmit = (e) => {
     e.preventDefault();
     const trimmedUsername = usernameInput.trim();
-    
+
     if (trimmedUsername.length === 0) {
       alert('Please enter a username');
       return;
@@ -343,7 +375,7 @@ function App() {
   const handleMessageSubmit = (e) => {
     e.preventDefault();
     const trimmedMessage = messageInput.trim();
-    
+
     if (trimmedMessage.length === 0) {
       return;
     }
@@ -358,6 +390,9 @@ function App() {
   };
 
   const handleRoomChange = (room) => {
+    setTimeout(() => {
+      messageInputRef.current?.focus();
+    }, 100);
     if (room !== selectedRoom && username) {
       setSelectedRoom(room);
     }
@@ -368,17 +403,44 @@ function App() {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const handleLogout = () => {
+    if (socket) {
+      socket.disconnect();
+    }
+    setUsername('');
+    setUsernameInput('');
+    setMessages([]);
+    setOnlineUsers([]);
+    setAllUsers([]);
+    setSelectedRoom(DEFAULT_ROOM);
+    saveUsernameToStorage('');
+    saveRoomToStorage(DEFAULT_ROOM);
+    previousRoomRef.current = null;
+  };
+
+  const getInitialLetter = (name) => {
+    if (!name || name.length === 0) return '?';
+    return name.charAt(0).toUpperCase();
+  };
+
   return (
     <div className="App">
       <div className="chat-container">
         <header className="chat-header">
           <h1>SpheraX Chat</h1>
-          <div className="connection-status">
-            <span className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
-              {isConnected ? '●' : '○'}
-            </span>
-            <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
-          </div>
+          {username && (
+            <div className="user-controls">
+              <div className="user-icon-container" title={username}>
+                <div className="user-icon">
+                  {getInitialLetter(username)}
+                </div>
+                <div className={`connection-badge ${isConnected ? 'connected' : 'disconnected'}`}></div>
+              </div>
+              <button className="logout-btn" onClick={handleLogout} title="Logout">
+                Logout
+              </button>
+            </div>
+          )}
         </header>
 
         {!username ? (
@@ -412,7 +474,7 @@ function App() {
                       onClick={() => handleRoomChange(room)}
                       disabled={!isConnected}
                     >
-                      # {room}
+                      {room}
                     </button>
                   ))}
                 </div>
@@ -435,7 +497,7 @@ function App() {
             </div>
             <div className="chat-content">
               <div className="chat-room-header">
-                <h2>#{selectedRoom}</h2>
+                <h2>{selectedRoom}</h2>
               </div>
               <div className="messages-container">
                 {messages.length === 0 ? (
@@ -448,11 +510,11 @@ function App() {
                     .map((msg, index) => {
                       const isOwnMessage = msg.type === 'message' && msg.username === username;
                       const isGlobalRoom = selectedRoom === GLOBAL_ROOM;
-                      
+
                       // Show "You" for own messages in all rooms
                       let displayText = msg.text;
                       let displayUsername = msg.username;
-                      
+
                       if (msg.type === 'system') {
                         // For system messages in global room: replace username with "You" if it's the current user
                         if (isGlobalRoom && msg.username === username) {
@@ -462,17 +524,17 @@ function App() {
                         // For own messages in all rooms: show "You" instead of username
                         displayUsername = 'You';
                       }
-                      
+
                       // In global room, own messages are displayed like other messages (left-aligned)
                       // In other rooms, own messages are right-aligned
-                      const messageClass = msg.type === 'system' 
-                        ? 'system-message' 
-                        : isGlobalRoom 
+                      const messageClass = msg.type === 'system'
+                        ? 'system-message'
+                        : isGlobalRoom
                           ? 'other-message' // In global room, all messages are left-aligned
-                          : isOwnMessage 
-                            ? 'own-message' 
+                          : isOwnMessage
+                            ? 'own-message'
                             : 'other-message';
-                      
+
                       return (
                         <div
                           key={index}
@@ -498,7 +560,7 @@ function App() {
                   type="text"
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
-                  placeholder={`Message #${selectedRoom}...`}
+                  placeholder={`Message ${selectedRoom}...`}
                   maxLength={500}
                   className="message-input"
                   disabled={!isConnected}

@@ -341,7 +341,7 @@ io.on('connection', (socket) => {
             // User hasn't reconnected - send leave message
             const globalLeaveMessage = {
               type: 'system',
-              text: `${username} left the chat`,
+              text: `System: ${username} left the chat`,
               timestamp: new Date().toISOString(),
               room: GLOBAL_ROOM,
               username: username
