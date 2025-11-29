@@ -1,4 +1,6 @@
-export const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
+export const SERVER_URL = process.env.REACT_APP_SERVER_URL !== undefined && process.env.REACT_APP_SERVER_URL !== '' 
+  ? process.env.REACT_APP_SERVER_URL 
+  : (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3001');
 export const DEFAULT_ROOM = 'general';
 export const GLOBAL_ROOM = 'global';
 export const ROOMS = ['global', 'general', 'random', 'tech', 'gaming'];

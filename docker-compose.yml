@@ -25,7 +25,7 @@ services:
       context: ./client
       dockerfile: Dockerfile
       args:
-        - REACT_APP_SERVER_URL=http://localhost:3001
+        - REACT_APP_SERVER_URL=
     container_name: spherax-chat-client
     ports:
       - "80:80"
