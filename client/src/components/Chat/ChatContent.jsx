@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import MessageList from './MessageList';
 import MessageForm from './MessageForm';
 import './Chat.css';

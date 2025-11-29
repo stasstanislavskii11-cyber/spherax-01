@@ -246,20 +246,31 @@ describe('Chat Server Tests', () => {
   });
 
   test('should notify when user leaves', (done) => {
-    clientSocket1.emit('join', { username: 'Alice', room: 'general' });
-    clientSocket2.emit('join', { username: 'Bob', room: 'general' });
+    let joinCount = 0;
+    const onJoin = () => {
+      joinCount++;
+      if (joinCount === 2) {
+        // Both clients have joined, now set up the listener
+        clientSocket2.once('system', (data) => {
+          if (data.text.includes('left the chat')) {
+            expect(data.type).toBe('system');
+            expect(data.text).toContain('Alice');
+            done();
+          }
+        });
 
-    clientSocket2.on('system', (data) => {
-      if (data.text.includes('left the chat')) {
-        expect(data.type).toBe('system');
-        expect(data.text).toContain('Alice');
-        done();
+        // Disconnect after a short delay
+        setTimeout(() => {
+          clientSocket1.disconnect();
+        }, 100);
       }
-    });
+    };
 
-    setTimeout(() => {
-      clientSocket1.disconnect();
-    }, 100);
+    clientSocket1.emit('join', { username: 'Alice', room: 'general' });
+    clientSocket1.once('system', onJoin);
+    
+    clientSocket2.emit('join', { username: 'Bob', room: 'general' });
+    clientSocket2.once('system', onJoin);
   });
 
   test('should handle room switching', (done) => {
