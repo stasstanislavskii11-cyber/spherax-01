@@ -137,11 +137,17 @@ describe('Chat Server Tests', () => {
   });
 
   afterEach((done) => {
-    if (clientSocket1.connected) {
-      clientSocket1.disconnect();
+    if (clientSocket1) {
+      clientSocket1.removeAllListeners();
+      if (clientSocket1.connected) {
+        clientSocket1.disconnect();
+      }
     }
-    if (clientSocket2.connected) {
-      clientSocket2.disconnect();
+    if (clientSocket2) {
+      clientSocket2.removeAllListeners();
+      if (clientSocket2.connected) {
+        clientSocket2.disconnect();
+      }
     }
     done();
   });
@@ -175,9 +181,12 @@ describe('Chat Server Tests', () => {
   });
 
   test('should receive users list when joining', (done) => {
+    let doneCalled = false;
     clientSocket1.emit('join', { username: 'Alice', room: 'general' });
     
-    clientSocket1.on('users', (data) => {
+    clientSocket1.once('users', (data) => {
+      if (doneCalled) return;
+      doneCalled = true;
       expect(data.type).toBe('users');
       expect(data.room).toBe('general');
       expect(Array.isArray(data.users)).toBe(true);
@@ -219,17 +228,19 @@ describe('Chat Server Tests', () => {
   });
 
   test('should update users list when user joins', (done) => {
+    let doneCalled = false;
     clientSocket1.emit('join', { username: 'Alice', room: 'general' });
     
     clientSocket2.on('users', (data) => {
-      if (data.users.includes('Bob')) {
+      if (data.users.includes('Bob') && !doneCalled) {
+        doneCalled = true;
         expect(data.users).toContain('Alice');
         expect(data.users).toContain('Bob');
         done();
       }
     });
 
-    clientSocket1.on('users', () => {
+    clientSocket1.once('users', () => {
       clientSocket2.emit('join', { username: 'Bob', room: 'general' });
     });
   });
