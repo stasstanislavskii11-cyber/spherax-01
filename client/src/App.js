@@ -78,6 +78,7 @@ function App() {
       {!username ? (
         <UsernameForm
           onSubmit={handleUsernameSubmit}
+          isConnected={isConnected}
         />
       ) : (
         <ChatContainer

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { validateUsername } from '../../utils/validators';
 import './UsernameForm.css';
 
-const UsernameForm = ({ onSubmit }) => {
+const UsernameForm = ({ onSubmit, isConnected = true }) => {
   const [usernameInput, setUsernameInput] = useState('');
 
   const handleSubmit = (e) => {
@@ -11,6 +11,12 @@ const UsernameForm = ({ onSubmit }) => {
 
     if (!validateUsername(trimmedUsername)) {
       alert('Please enter a username');
+      return;
+    }
+
+    // Check if connected before allowing submission
+    if (!isConnected) {
+      alert('Not connected to server. Please wait...');
       return;
     }
 
