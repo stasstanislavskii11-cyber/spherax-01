@@ -6,7 +6,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+# Using npm install for cross-platform compatibility
+RUN npm install
 
 # Copy source code
 COPY public ./public
