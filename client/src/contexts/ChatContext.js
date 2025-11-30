@@ -24,23 +24,7 @@ export const ChatProvider = ({ children }) => {
     setUsername(trimmedUsername);
     saveUsernameToStorage(trimmedUsername);
     saveRoomToStorage(selectedRoom);
-    
-    // If socket is connected, join immediately
-    if (socket && socket.connected) {
-      socket.emit('join', { username: trimmedUsername, room: selectedRoom });
-    } else if (socket) {
-      // If socket exists but not connected, try to reconnect
-      if (!socket.connected) {
-        socket.connect();
-      }
-      // Wait for connection and then join
-      const connectHandler = () => {
-        socket.emit('join', { username: trimmedUsername, room: selectedRoom });
-        socket.off('connect', connectHandler);
-      };
-      socket.on('connect', connectHandler);
-    }
-    // If socket doesn't exist yet, the useSocket hook will handle it when it connects
+    // The useSocket hook will automatically handle joining when username is set
   };
 
   const handleMessageSubmit = (trimmedMessage) => {

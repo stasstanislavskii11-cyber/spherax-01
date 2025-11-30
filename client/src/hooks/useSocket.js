@@ -8,7 +8,6 @@ export const useSocket = (username, selectedRoom) => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState([]);
-  const [onlineUsers, setOnlineUsers] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   
   const currentRoomRef = useRef(selectedRoom);
@@ -32,22 +31,6 @@ export const useSocket = (username, selectedRoom) => {
       console.log('Connected to server');
       setIsConnected(true);
       
-      // Update current user's status in allUsers list when connected
-      if (usernameRef.current) {
-        setAllUsers((prev) => {
-          const userExists = prev.some(user => user.username === usernameRef.current);
-          if (userExists) {
-            return prev.map((user) => 
-              user.username === usernameRef.current 
-                ? { ...user, isOnline: true }
-                : user
-            );
-          } else {
-            return [...prev, { username: usernameRef.current, isOnline: true }];
-          }
-        });
-      }
-
       // Auto-join if username was restored from localStorage
       const currentUsername = usernameRef.current;
       const currentRoom = currentRoomRef.current;
@@ -60,22 +43,6 @@ export const useSocket = (username, selectedRoom) => {
     newSocket.on('disconnect', () => {
       console.log('Disconnected from server');
       setIsConnected(false);
-      
-      // Update current user's status in allUsers list when disconnected
-      if (usernameRef.current) {
-        setAllUsers((prev) => {
-          const userExists = prev.some(user => user.username === usernameRef.current);
-          if (userExists) {
-            return prev.map((user) => 
-              user.username === usernameRef.current 
-                ? { ...user, isOnline: false }
-                : user
-            );
-          } else {
-            return [...prev, { username: usernameRef.current, isOnline: false }];
-          }
-        });
-      }
     });
 
     // Handle reconnection after disconnect
@@ -134,13 +101,6 @@ export const useSocket = (username, selectedRoom) => {
       }
     };
 
-    // Listen for users list updates (room-specific)
-    const handleUsers = (data) => {
-      if (data.room === currentRoomRef.current) {
-        setOnlineUsers(data.users);
-      }
-    };
-
     // Listen for global user list updates from backend
     const handleAllUsers = (data) => {
       const usersList = (data.users || []).map(user => ({
@@ -161,7 +121,6 @@ export const useSocket = (username, selectedRoom) => {
     newSocket.on('message', handleMessage);
     newSocket.on('system', handleSystem);
     newSocket.on('history', handleHistory);
-    newSocket.on('users', handleUsers);
     newSocket.on('allUsers', handleAllUsers);
 
     newSocket.on('error', (data) => {
@@ -194,7 +153,6 @@ export const useSocket = (username, selectedRoom) => {
   useEffect(() => {
     if (socket && socket.connected && username && previousRoomRef.current !== null && previousRoomRef.current !== selectedRoom) {
       setMessages([]);
-      setOnlineUsers([]);
 
       const storedMessages = loadMessagesFromStorage(selectedRoom);
       const filteredMessages = storedMessages.filter(msg => msg.room === selectedRoom);
@@ -234,7 +192,6 @@ export const useSocket = (username, selectedRoom) => {
     socket,
     isConnected,
     messages,
-    onlineUsers,
     allUsers,
     setMessages
   };

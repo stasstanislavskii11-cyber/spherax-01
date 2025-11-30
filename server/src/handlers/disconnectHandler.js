@@ -12,14 +12,6 @@ const handleDisconnect = (socket, io) => {
     
     console.log(`User ${username} disconnected from room ${room} (socket: ${socket.id})`);
 
-    // Send updated user list to all users in the room (always update room list)
-    const roomUsersList = userStore.getRoomUsers(room);
-    io.to(room).emit('users', {
-      type: 'users',
-      users: roomUsersList,
-      room: room
-    });
-
     // Only send leave message if this was the last session of this username
     if (!hasOtherSessions) {
       // Don't broadcast global user list immediately - wait for reconnect window

@@ -36,21 +36,10 @@ const handleJoin = (socket, io, data) => {
     // Handle leaving previous room if user was in one
     if (socket.room) {
       const prevRoom = socket.room;
-      const prevUsername = socket.username;
       socket.leave(prevRoom);
 
       // Update user store for room change
-      const roomUpdate = userStore.updateSocketRoom(socket, validatedRoom);
-      
-      if (roomUpdate) {
-        // Send updated user list to previous room
-        const prevRoomUsers = userStore.getRoomUsers(prevRoom);
-        io.to(prevRoom).emit('users', {
-          type: 'users',
-          users: prevRoomUsers,
-          room: prevRoom
-        });
-      }
+      userStore.updateSocketRoom(socket, validatedRoom);
       
       // Update socket properties for room switch
       socket.username = trimmedUsername;
@@ -80,14 +69,6 @@ const handleJoin = (socket, io, data) => {
       room: validatedRoom
     });
 
-    // Send current users list to the new user (room-specific)
-    const roomUsersList = userStore.getRoomUsers(validatedRoom);
-    socket.emit('users', {
-      type: 'users',
-      users: roomUsersList,
-      room: validatedRoom
-    });
-
     // Broadcast global user list with status to all clients
     broadcastService.broadcastAllUsers(io);
 
@@ -101,13 +82,6 @@ const handleJoin = (socket, io, data) => {
       io.to(GLOBAL_ROOM).emit('system', globalJoinMessage);
       messageService.saveMessage(GLOBAL_ROOM, globalJoinMessage);
     }
-
-    // Send updated user list to all users in the room
-    io.to(validatedRoom).emit('users', {
-      type: 'users',
-      users: roomUsersList,
-      room: validatedRoom
-    });
   } catch (error) {
     console.error('Error handling join:', error);
     socket.emit('error', {

@@ -4,7 +4,7 @@ const GLOBAL_ROOM = 'global';
 const ROOMS = ['global', 'general', 'random', 'tech', 'gaming'];
 
 // Reconnect window for detecting page reloads (in milliseconds)
-const RECONNECT_WINDOW = 600; // 5 seconds
+const RECONNECT_WINDOW = 600; // 600 milliseconds
 
 // Message history limits
 const MAX_MESSAGES_PER_ROOM = 100;

@@ -1,5 +1,4 @@
 const messageStore = require('../models/MessageStore');
-const userStore = require('../models/UserStore');
 
 const createMessage = (username, text, room) => {
   return {
