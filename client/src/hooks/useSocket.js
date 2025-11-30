@@ -143,9 +143,26 @@ export const useSocket = (username, selectedRoom) => {
 
   // Auto-join when socket connects and username exists
   useEffect(() => {
-    if (socket && socket.connected && username && previousRoomRef.current === null) {
-      socket.emit('join', { username, room: selectedRoom });
-      previousRoomRef.current = selectedRoom;
+    if (socket && username && previousRoomRef.current === null) {
+      // If socket is disconnected, reconnect it
+      if (!socket.connected) {
+        socket.connect();
+      }
+      
+      // Join immediately if connected, or wait for connection
+      const joinRoom = () => {
+        if (socket.connected) {
+          socket.emit('join', { username, room: selectedRoom });
+          previousRoomRef.current = selectedRoom;
+        }
+      };
+      
+      if (socket.connected) {
+        joinRoom();
+      } else {
+        // Wait for connection event
+        socket.once('connect', joinRoom);
+      }
     }
   }, [socket, username, selectedRoom]);
 
