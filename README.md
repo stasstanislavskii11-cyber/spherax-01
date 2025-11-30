@@ -2,6 +2,36 @@
 
 A simple real-time chat web application built with Node.js, Express, Socket.IO, and React.
 
+## Quick Start (One Command)
+
+### Prerequisites
+- Docker and Docker Compose installed
+- Git
+
+### For Your Client (One Command Launch)
+
+1. **Clone the repository:**
+```bash
+git clone <your-repo-url>
+cd Spherax-Chat-App
+```
+
+2. **Launch everything with one command:**
+```bash
+docker-compose up --build
+```
+
+3. **Access the application:**
+   - Open browser: http://localhost:80
+   - Backend API: http://localhost:3001/health
+
+4. **Stop the application:**
+```bash
+docker-compose down
+```
+
+That's it! The entire application will build and start automatically.
+
 ## Tech Stack
 
 ### Backend
