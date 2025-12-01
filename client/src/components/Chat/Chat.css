@@ -177,6 +177,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -333,9 +334,21 @@
   .rooms-section h3 {
     padding: 8px 12px !important;
   }
-  
+
   .users-section h3 {
     padding: 8px 12px !important;
   }
 }
 
+
+@media (max-width: 400px) {
+
+  .chat-sidebar .rooms-list {
+    padding: 5px;
+  }
+
+  .chat-sidebar {
+    width: 90px;
+  }
+
+}
