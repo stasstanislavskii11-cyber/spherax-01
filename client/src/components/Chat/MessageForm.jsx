@@ -1,25 +1,12 @@
-import React, { useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { validateMessage } from '../../utils/validators';
 import { useChat } from '../../contexts/ChatContext';
 import './Chat.css';
 
-const MessageForm = (props, ref) => {
+const MessageForm = () => {
   const { messageInput, setMessageInput, handleMessageSubmit, selectedRoom, isConnected, username, messageFormRef } = useChat();
   const messageInputRef = useRef(null);
   const isConnectedRef = useRef(isConnected);
-
-  // Expose focus method to parent components
-  useImperativeHandle(ref, () => ({
-    focus: () => {
-      if (messageInputRef.current && isConnected) {
-        setTimeout(() => {
-          if (messageInputRef.current && isConnected) {
-            messageInputRef.current.focus();
-          }
-        }, 100);
-      }
-    }
-  }));
 
   // Callback ref to sync messageFormRef with the input element
   const setInputRef = (element) => {
@@ -100,5 +87,5 @@ const MessageForm = (props, ref) => {
   );
 };
 
-export default forwardRef(MessageForm);
+export default MessageForm;
 
